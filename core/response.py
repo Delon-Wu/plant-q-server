@@ -17,4 +17,12 @@ class APIResponse(Response):
 
     @classmethod
     def error(cls, msg="error", code=400, data=None, status=status.HTTP_400_BAD_REQUEST, **kwargs):
+        return cls(data=data, code=code, msg=msg, status=status, **kwargs)
+
+    @classmethod
+    def auth_error(cls, msg="Authentication error", code=401, data=None, status=status.HTTP_401_UNAUTHORIZED, **kwargs):
+        return cls(data=data, code=code, msg=msg, status=status, **kwargs)
+
+    @classmethod
+    def token_expired(cls, msg="Token has expired", code=40101, data=None, status=status.HTTP_401_UNAUTHORIZED, **kwargs):
         return cls(data=data, code=code, msg=msg, status=status, **kwargs) 
