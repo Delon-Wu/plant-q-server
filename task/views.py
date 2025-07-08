@@ -33,9 +33,15 @@ class TaskViewSet(viewsets.ModelViewSet):
         return APIResponse.success(data=serializer.data, msg="创建成功", status=status.HTTP_201_CREATED)
 
     def update(self, request, *args, **kwargs):
-        partial = kwargs.pop('partial', False)
+        partial = kwargs.pop('partial', True)  # 支持 PATCH 部分更新
         instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        data = request.data.copy()
+        # 检查必填字段
+        required_fields = ['task_type', 'duration_type']
+        for field in required_fields:
+            if field in data and (data[field] is None or data[field] == ''):
+                return APIResponse.error(msg=f"{field} 不能为空", code=400)
+        serializer = self.get_serializer(instance, data=data, partial=partial)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
         return APIResponse.success(data=serializer.data, msg="更新成功")
