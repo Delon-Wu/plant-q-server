@@ -7,6 +7,12 @@ from django.contrib.auth import get_user_model
 from .serializers import UserSerializer, RegisterSerializer, ChangePasswordSerializer
 from core.response import APIResponse
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
+# 注册邮箱验证码发送接口
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import random
+from django.core.mail import send_mail
+from django.conf import settings
 
 User = get_user_model()
 
@@ -37,6 +43,63 @@ class ChangePasswordView(generics.UpdateAPIView):
         user.set_password(serializer.data.get("new_password"))
         user.save()
         return APIResponse.success(msg="Password updated successfully")
+
+
+@csrf_exempt
+def send_verification_code(request):
+    if request.method == 'POST':
+        import json
+        data = json.loads(request.body)
+        email = data.get('email')
+        if not email:
+            return JsonResponse({'message': '邮箱不能为空'}, status=400)
+        code = str(random.randint(100000, 999999))
+        subject = '【Plant Q】您的注册验证码'
+        message = f'您的验证码是：{code}，5分钟内有效。如非本人操作，请忽略此邮件。'
+        html_message = f'''<div style="font-family:微软雅黑,Arial,sans-serif;padding:24px;background:#f8f8f8;">
+            <div style="max-width:480px;margin:auto;background:#fff;border-radius:8px;padding:32px 24px;box-shadow:0 2px 8px #eee;">
+                <h2 style="color:#4caf50;">Plant Q 注册验证码</h2>
+                <p style="font-size:18px;color:#333;">您的验证码是：</p>
+                <div style="font-size:32px;font-weight:bold;color:#2196f3;letter-spacing:4px;margin:16px 0;">{code}</div>
+                <p style="color:#888;font-size:14px;">5分钟内有效。如非本人操作，请忽略此邮件。</p>
+            </div>
+        </div>'''
+        try:
+            send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email], html_message=html_message)
+        except Exception as e:
+            return JsonResponse({'message': '邮件发送失败', 'detail': str(e)}, status=500)
+        # TODO: 保存验证码到数据库或缓存，便于后续校验
+        # 简单用内存字典保存验证码（仅开发测试用，生产建议用 Redis）
+        from datetime import datetime, timedelta
+        if not hasattr(settings, 'VERIFICATION_CODES'):
+            settings.VERIFICATION_CODES = {}
+        settings.VERIFICATION_CODES[email] = {
+            'code': code,
+            'expire': datetime.now() + timedelta(minutes=5)
+        }
+        return JsonResponse({'message': '验证码已发送', 'code': 200})
+@csrf_exempt
+def verify_code(request):
+    if request.method == 'POST':
+        import json
+        data = json.loads(request.body)
+        email = data.get('email')
+        code = data.get('code')
+        if not email or not code:
+            return JsonResponse({'message': '邮箱和验证码不能为空'}, status=400)
+        codes = getattr(settings, 'VERIFICATION_CODES', {})
+        info = codes.get(email)
+        if not info:
+            return JsonResponse({'message': '未发送验证码或验证码已过期'}, status=400)
+        from datetime import datetime
+        if datetime.now() > info['expire']:
+            return JsonResponse({'message': '验证码已过期'}, status=400)
+        if code != info['code']:
+            return JsonResponse({'message': '验证码错误'}, status=400)
+        # 验证通过后可删除验证码
+        del codes[email]
+        return JsonResponse({'message': '验证通过', 'code': 200})
+    return JsonResponse({'message': '仅支持POST请求'}, status=405)
 
 class LogoutView(generics.GenericAPIView):
     permission_classes = (IsAuthenticated,)
