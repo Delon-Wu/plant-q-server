@@ -12,7 +12,7 @@ from asgiref.sync import sync_to_async
 # 1. 转发 openAI api 流式传输的数据
 class ChatView(APIView):
     permission_classes = [IsAuthenticated]
-    async def post(self, request):
+    def post(self, request):
         try:
             deepseek_url = os.environ.get('DEEPSEEK_API_URL')
             deepseek_api_key = os.environ.get('DEEPSEEK_API_KEY')
@@ -20,11 +20,11 @@ class ChatView(APIView):
                 return JsonResponse({'error': '内部错误，请稍后再试'}, status=500)
             headers = {k: v for k, v in request.headers.items() if k.lower() != 'host'}
             headers['Authorization'] = f'Bearer {deepseek_api_key}'
-            async with httpx.AsyncClient(timeout=None) as client:
-                async with client.stream('POST', deepseek_url, content=request.body, headers=headers) as resp:
-                    return StreamingHttpResponse(resp.aiter_bytes(), status=resp.status_code, content_type=resp.headers.get('content-type'))
+            import requests
+            resp = requests.post(deepseek_url, data=request.body, headers=headers, stream=True)
+            return StreamingHttpResponse(resp.iter_content(chunk_size=8192), status=resp.status_code, content_type=resp.headers.get('content-type'))
         except Exception as e:
-            return APIResponse.error(msg=str(e), status=500)
+            return JsonResponse({'error': str(e)}, status=500)
 
 
 # 2. 植物识别接口
