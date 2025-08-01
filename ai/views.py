@@ -1,89 +1,81 @@
 import os
-import httpx
-from django.http import StreamingHttpResponse, JsonResponse
+from django.http import JsonResponse
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from core.response import APIResponse
-from PIL import Image
 import base64
-from django.core.cache import cache
-from asgiref.sync import sync_to_async
+import requests
+from utils.baidu_api import get_baidu_access_token, validate_image_file
 
 # 1. 转发 openAI api 流式传输的数据
 class ChatView(APIView):
     permission_classes = [IsAuthenticated]
     def post(self, request):
-        accept = request.headers.get('accept', '')
-        if 'text/event-stream' not in accept:
-            # 兼容 application/json
-            if 'application/json' in accept or '*/*' in accept:
-                pass  # 允许
-            else:
-                return JsonResponse({'code': 406, 'data': None, 'msg': '无法满足Accept HTTP头的请求。'}, status=406)
-        try:
-            deepseek_url = os.environ.get('DEEPSEEK_API_URL')
-            deepseek_api_key = os.environ.get('DEEPSEEK_API_KEY')
-            if not deepseek_url or not deepseek_api_key:
-                return JsonResponse({'error': '内部错误，请稍后再试'}, status=500)
-            headers = {k: v for k, v in request.headers.items() if k.lower() != 'host'}
-            print("headers->",headers)
-            headers['Authorization'] = f'Bearer {deepseek_api_key}'
-            import requests
-            resp = requests.post(deepseek_url, data=request.body, headers=headers, stream=True)
-            def sse_stream():
-                for chunk in resp.iter_content(chunk_size=8192):
-                    if chunk:
-                        # SSE格式：每块数据前加data:，后加两个换行
-                        yield f"data: {chunk.decode(errors='ignore')}\n\n"
-            return StreamingHttpResponse(sse_stream(), status=resp.status_code, content_type='text/event-stream')
-        except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({"message": "This endpoint is not implemented yet."}, status=501)
 
 
 # 2. 植物识别接口
 class PlantRecognizeView(APIView):
     permission_classes = [IsAuthenticated]
-    async def post(self, request):
-        baidu_api_key = os.environ.get('BAIDU_API_KEY')
-        baidu_secret_key = os.environ.get('BAIDU_SECRET_KEY')
-        if not baidu_api_key or not baidu_secret_key:
-            return JsonResponse({'error': '内部错误，请稍后再试'}, status=500)
-        # 优先从缓存获取access_token
-        access_token = cache.get('baidu_access_token')
-        if not access_token:
-            token_url = f'https://aip.baidubce.com/oauth/2.0/token'
-            token_params = {
-                'grant_type': 'client_credentials',
-                'client_id': baidu_api_key,
-                'client_secret': baidu_secret_key
-            }
-            async with httpx.AsyncClient() as client:
-                token_resp = await client.post(token_url, data=token_params)
-                token_data = token_resp.json()
-            access_token = token_data.get('access_token')
-            expires_in = token_data.get('expires_in')
-            if not access_token:
-                return JsonResponse({'error': 'Failed to get access_token', 'detail': token_data}, status=500)
-            cache.set('baidu_access_token', access_token, timeout=max(10*24*60*60, expires_in - 2*24*60*60))
-        img = request.FILES.get('image')
-        if not img:
-            return JsonResponse({'error': 'No image uploaded'}, status=400)
-        # 检查图片格式
+    def post(self, request):
         try:
-            image = Image.open(img)
-            img_format = image.format.lower()
-        except Exception:
-            return JsonResponse({'error': '无法识别图片格式'}, status=400)
-        if img_format not in ['png', 'jpg', 'jpeg', 'bmp']:
-            return JsonResponse({'error': '仅支持png/jpg/jpeg/bmp格式'}, status=400)
-        img_bytes = img.read()
-        img_base64 = base64.b64encode(img_bytes).decode()
-        # 检查图片大小
-        if len(img_base64.encode('utf-8')) > 4 * 1024 * 1024:
-            return JsonResponse({'error': '图片大小不能超过4M'}, status=400)
-        plant_url = f'https://aip.baidubce.com/rest/2.0/image-classify/v1/plant?access_token={access_token}'
-        plant_headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-        plant_data = {'image': img_base64}
-        async with httpx.AsyncClient() as client:
-            plant_resp = await client.post(plant_url, data=plant_data, headers=plant_headers)
-            return JsonResponse(plant_resp.json())
+            baidu_api_key = os.environ.get('BAIDU_API_KEY')
+            baidu_secret_key = os.environ.get('BAIDU_SECRET_KEY')
+            if not baidu_api_key or not baidu_secret_key:
+                return JsonResponse({'error': '未配置百度API密钥'}, status=500)
+            
+            file = request.FILES.get('image')
+            if not file:
+                return JsonResponse({'error': '请上传图片文件，字段名为image'}, status=400)
+            
+            valid, msg = validate_image_file(file)
+            if not valid:
+                return JsonResponse({'error': msg}, status=400)
+            
+            img_bytes = file.read()
+            img_b64 = base64.b64encode(img_bytes).decode()
+            
+            try:
+                access_token = get_baidu_access_token(baidu_api_key, baidu_secret_key)
+            except Exception as e:
+                return JsonResponse({'error': f'获取access_token失败: {str(e)}'}, status=500)
+            
+            url = f'https://aip.baidubce.com/rest/2.0/image-classify/v1/plant?access_token={access_token}'
+            headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+            data = {'image': img_b64}
+            
+            try:
+                resp = requests.post(url, data=data, headers=headers, timeout=30)
+                resp.raise_for_status()
+                result = resp.json()
+            except requests.RequestException as e:
+                return JsonResponse({'error': f'百度接口请求失败: {str(e)}'}, status=500)
+            except ValueError as e:
+                return JsonResponse({'error': '百度接口返回数据格式错误'}, status=500)
+            
+            if 'error_code' in result:
+                return JsonResponse({'error': result.get('error_msg', '识别失败')}, status=500)
+            
+            res_list = result.get('result', [])
+            if not res_list:
+                return JsonResponse({'result': '抱歉，未能识别出植物信息'}, status=200)
+            
+            # 组装自然语言
+            descs = []
+            for idx, item in enumerate(res_list[:3]):  # 限制最多显示3个结果
+                name = item.get('name', '未知')
+                score = item.get('score', 0)
+                baike = item.get('baike_info', {})
+                desc = baike.get('description', '')
+                
+                if idx == 0:
+                    descs.append(f"识别结果：**{name}**（置信度{score*100:.1f}%）。{desc}")
+                else:
+                    descs.append(f"其他可能：{name}（置信度{score*100:.1f}%）。{desc}")
+            
+            text = '\n\n'.join(descs)  # 使用双换行分隔
+            return JsonResponse({'result': text}, status=200)
+            
+        except Exception as e:
+            return JsonResponse({'error': f'服务异常: {str(e)}'}, status=500)
+        
