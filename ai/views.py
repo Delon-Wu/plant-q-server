@@ -13,13 +13,9 @@ from asgiref.sync import sync_to_async
 class ChatView(APIView):
     permission_classes = [IsAuthenticated]
     def post(self, request):
-        accept = request.headers.get('accept', '')
+        accept = request.headers.get('accept', '').lower()
         if 'text/event-stream' not in accept:
-            # 兼容 application/json
-            if 'application/json' in accept or '*/*' in accept:
-                pass  # 允许
-            else:
-                return JsonResponse({'code': 406, 'data': None, 'msg': '无法满足Accept HTTP头的请求。'}, status=406)
+            return JsonResponse({'code': 406, 'data': None, 'msg': '仅支持Accept包含text/event-stream的请求。'}, status=406)
         try:
             deepseek_url = os.environ.get('DEEPSEEK_API_URL')
             deepseek_api_key = os.environ.get('DEEPSEEK_API_KEY')
