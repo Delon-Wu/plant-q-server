@@ -16,7 +16,7 @@ import os
 # 加载 .env 文件（如果存在）
 try:
     from dotenv import load_dotenv
-    load_dotenv(os.path.join(Path(__file__).resolve().parent.parent, '.env.local'))
+    load_dotenv(os.path.join(Path(__file__).resolve().parent.parent, '.env'))
 except ImportError:
     pass
 
@@ -54,7 +54,8 @@ INSTALLED_APPS = [
     # Local apps
     'accounts',
     'task',
-    'ai',
+    'foundation',
+    'plant',
 ]
 
 MIDDLEWARE = [
@@ -86,8 +87,7 @@ TEMPLATES = [
     },
 ]
 
-# 使用 ASGI 支持异步视图
-ASGI_APPLICATION = "config.asgi.application"
+WSGI_APPLICATION = 'config.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
@@ -193,6 +193,16 @@ SIMPLE_JWT = {
 # CORS settings
 CORS_ALLOW_ALL_ORIGINS = True  # Only for development
 CORS_ALLOW_CREDENTIALS = True
+# 允许的请求方法
+CORS_ALLOW_METHODS = [
+    'GET',
+    'POST',
+    'OPTIONS',
+]
+CORS_ALLOW_HEADERS = [
+    'content-type',
+    'authorization',
+]
 
 # 邮件服务配置（请根据实际情况修改）
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

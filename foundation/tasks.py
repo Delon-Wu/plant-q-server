@@ -2,7 +2,8 @@ import os
 import requests
 from celery import shared_task
 import base64
-
+from django.utils import timezone
+from .models import TrackEvent
 def get_baidu_access_token():
     baidu_api_key = os.environ.get('BAIDU_API_KEY')
     baidu_secret_key = os.environ.get('BAIDU_SECRET_KEY')
@@ -27,3 +28,11 @@ def baidu_plant_recognize_task(image_bytes):
     plant_data = {'image': img_base64}
     plant_resp = requests.post(plant_url, data=plant_data, headers=plant_headers)
     return plant_resp.json()
+
+def clean_old_track_events(days=30):
+    """
+    清理30天前的埋点数据，可在定时任务中调用。
+    """
+    threshold = timezone.now() - timezone.timedelta(days=days)
+    deleted, _ = TrackEvent.objects.filter(timestamp__lt=threshold).delete()
+    return deleted

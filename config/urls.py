@@ -40,7 +40,8 @@ urlpatterns = [
     path('api/accounts/', include('accounts.urls')),
     path('api/task/', include('task.urls')),
     path('api/', include('proxy.urls')),
-    path('api/ai/', include('ai.urls')),
+    path('api/foundation/', include('foundation.urls')),
+    path('api/plant/', include('plant.urls')),
     
     # Swagger documentation
     re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
