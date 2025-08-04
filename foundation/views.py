@@ -1,5 +1,5 @@
 import os
-from django.http import JsonResponse
+from django.http import JsonResponse, StreamingHttpResponse
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from core.response import APIResponse
@@ -11,7 +11,27 @@ from utils.baidu_api import get_baidu_access_token, validate_image_file
 class ChatView(APIView):
     permission_classes = [IsAuthenticated]
     def post(self, request):
-        return JsonResponse({"message": "This endpoint is not implemented yet."}, status=501)
+        accept = request.headers.get('accept', '').lower()
+        if 'text/event-stream' not in accept:
+            return JsonResponse({'code': 406, 'data': None, 'msg': '仅支持Accept包含text/event-stream的请求。'}, status=406)
+        try:
+            deepseek_url = os.environ.get('DEEPSEEK_API_URL')
+            deepseek_api_key = os.environ.get('DEEPSEEK_API_KEY')
+            if not deepseek_url or not deepseek_api_key:
+                return JsonResponse({'error': '内部错误，请稍后再试'}, status=500)
+            headers = {k: v for k, v in request.headers.items() if k.lower() != 'host'}
+            print("headers->",headers)
+            headers['Authorization'] = f'Bearer {deepseek_api_key}'
+            import requests
+            resp = requests.post(deepseek_url, data=request.body, headers=headers, stream=True)
+            def sse_stream():
+                for chunk in resp.iter_content(chunk_size=8192):
+                    if chunk:
+                        # SSE格式：每块数据前加data:，后加两个换行
+                        yield f"data: {chunk.decode(errors='ignore')}\n\n"
+            return StreamingHttpResponse(sse_stream(), status=resp.status_code, content_type='text/event-stream')
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
 
 
 # 2. 植物识别接口
@@ -81,7 +101,7 @@ class PlantRecognizeView(APIView):
                 else:
                     descs.append(f"其他可能：{name}（置信度{score*100:.1f}%）。{desc}")
 
-            text = '\n\n'.join(descs)  # 使用双换行分隔
+            text = '\n'.join(descs)  # 使用双换行分隔
             most_likely_kind = res_list[0].get('name', None)
             return JsonResponse({'result': text, 'most_likely_kind': most_likely_kind}, status=200)
 
