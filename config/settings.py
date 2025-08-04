@@ -54,7 +54,8 @@ INSTALLED_APPS = [
     # Local apps
     'accounts',
     'task',
-    'ai',
+    'foundation',
+    'plant',
 ]
 
 MIDDLEWARE = [
