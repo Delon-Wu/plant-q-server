@@ -50,7 +50,7 @@ class PlantRecognizeView(APIView):
             if file:
                 valid, msg = validate_image_file(file)
                 if not valid:
-                    return JsonResponse({'error': msg}, status=400)
+                    return JsonResponse({'error': msg}, status=413)
                 img_bytes = file.read()
                 img_b64 = base64.b64encode(img_bytes).decode()
             else:
