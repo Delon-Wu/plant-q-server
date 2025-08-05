@@ -1,13 +1,13 @@
 from rest_framework import serializers
-from .models import Plant, PlantImage
+from .models import Plant, GrowthRecord
 
-class PlantImageSerializer(serializers.ModelSerializer):
+class GrowthRecordSerializer(serializers.ModelSerializer):
     class Meta:
-        model = PlantImage
+        model = GrowthRecord
         fields = ['id', 'image', 'record_time', 'remark', 'created_at']
 
 class PlantSerializer(serializers.ModelSerializer):
-    images = PlantImageSerializer(many=True, read_only=True)
+    records = GrowthRecordSerializer(many=True, read_only=True)
     class Meta:
         model = Plant
-        fields = ['id', 'user', 'name', 'cover', 'created_at', 'images']
+        fields = ['id', 'user', 'name', 'cover', 'created_at', 'records']

@@ -12,10 +12,10 @@ class Plant(models.Model):
     created_at = models.DateTimeField(default=timezone.now, db_index=True)
 
     def __str__(self):
-        return f"{self.name} ({self.user_id})"
+        return f"{self.name} ({self.user})"
 
-class PlantImage(models.Model):
-    plant = models.ForeignKey(Plant, on_delete=models.CASCADE, related_name='images')
+class GrowthRecord(models.Model):
+    plant = models.ForeignKey(Plant, on_delete=models.CASCADE, related_name='records')
     image = models.ImageField(upload_to=plant_image_upload_to)
     record_time = models.DateTimeField(default=timezone.now)
     remark = models.TextField(null=True, blank=True)
