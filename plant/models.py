@@ -3,7 +3,15 @@ from django.utils import timezone
 
 def plant_image_upload_to(instance, filename):
     # 按用户和植物分目录存储
-    return f"plant/{instance.user_id}/{instance.id or 'new'}/{filename}"
+    if hasattr(instance, 'user'):
+        # 对于 Plant 模型
+        user_id = instance.user
+        plant_id = instance.id or 'new'
+    else:
+        # 对于 GrowthRecord 模型
+        user_id = instance.plant.user
+        plant_id = instance.plant.id
+    return f"plant/{user_id}/{plant_id}/{filename}"
 
 class Plant(models.Model):
     user = models.ForeignKey('accounts.User', on_delete=models.CASCADE)
@@ -20,6 +28,9 @@ class GrowthRecord(models.Model):
     record_time = models.DateTimeField(default=timezone.now)
     remark = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'plant_growthrecord'
 
     def __str__(self):
         return f"{self.plant.name} @ {self.record_time}"
