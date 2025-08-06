@@ -49,3 +49,10 @@ class GrowthRecordAddView(APIView):
             image = serializer.save()
             return Response(GrowthRecordSerializer(image).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class GrowthRecordDeleteView(APIView):
+    permission_classes = [IsAuthenticated]
+    def delete(self, request, pk):
+        growth_record = get_object_or_404(GrowthRecord, pk=pk, plant__user=str(request.user.id))
+        growth_record.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
