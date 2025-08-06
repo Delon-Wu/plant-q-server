@@ -194,11 +194,7 @@ SIMPLE_JWT = {
 CORS_ALLOW_ALL_ORIGINS = True  # Only for development
 CORS_ALLOW_CREDENTIALS = True
 # 允许的请求方法
-CORS_ALLOW_METHODS = [
-    'GET',
-    'POST',
-    'OPTIONS',
-]
+CORS_ALLOW_METHODS = ['*']
 CORS_ALLOW_HEADERS = [
     'content-type',
     'authorization',
