@@ -16,6 +16,7 @@ def plant_image_upload_to(instance, filename):
 class Plant(models.Model):
     user = models.ForeignKey('accounts.User', on_delete=models.CASCADE)
     name = models.CharField(max_length=64)
+    description = models.TextField(null=True, blank=True, verbose_name='描述')
     cover = models.ImageField(upload_to=plant_image_upload_to)
     created_at = models.DateTimeField(default=timezone.now, db_index=True)
 

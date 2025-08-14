@@ -10,4 +10,4 @@ class PlantSerializer(serializers.ModelSerializer):
     records = GrowthRecordSerializer(many=True, read_only=True)
     class Meta:
         model = Plant
-        fields = ['id', 'user', 'name', 'cover', 'created_at', 'records']
+        fields = ['id', 'user', 'name', 'description', 'cover', 'created_at', 'records']
