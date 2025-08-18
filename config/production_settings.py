@@ -3,6 +3,8 @@
 """
 from .settings import *
 import os
+from dotenv import load_dotenv
+load_dotenv()
 
 # 安全设置
 DEBUG = False
