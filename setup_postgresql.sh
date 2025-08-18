@@ -19,7 +19,7 @@ pip install psycopg2-binary
 # 创建 .env 文件
 echo -e "${YELLOW}创建环境配置文件...${NC}"
 if [ ! -f .env ]; then
-    cp .env.server .env
+    cp .env.production .env
     echo -e "${GREEN}.env 文件已创建${NC}"
 else
     echo -e "${YELLOW}.env 文件已存在，请手动检查配置${NC}"
