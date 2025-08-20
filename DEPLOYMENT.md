@@ -129,6 +129,34 @@ ALTER ROLE plant_q_user SET timezone TO 'Asia/Shanghai';
 GRANT ALL PRIVILEGES ON DATABASE plant_q_db TO plant_q_user;
 \q
 ```
+#### 5.1 授权
+```sql
+-- 连接到数据库
+\c plant_q_db;
+
+-- 授予用户对数据库的所有权限
+ALTER DATABASE plant_q_db OWNER TO plant_q_user;
+
+-- 授予用户对 public 模式的所有权限
+GRANT ALL ON SCHEMA public TO plant_q_user;
+
+-- 授予用户在 public 模式下创建对象的权限
+GRANT CREATE ON SCHEMA public TO plant_q_user;
+
+-- 授予用户对 public 模式下所有表的权限
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO plant_q_user;
+
+-- 授予用户对 public 模式下所有序列的权限
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO plant_q_user;
+
+-- 设置默认权限（对未来创建的对象）
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO plant_q_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO plant_q_user;
+
+-- 退出
+\q
+```
+
 
 ### 6. 配置 Django
 
