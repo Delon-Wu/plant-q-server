@@ -4,20 +4,32 @@
 from .settings import *
 import os
 from dotenv import load_dotenv
-load_dotenv()
+try:
+    load_dotenv()
+except ImportError:
+    pass
 
 # 安全设置
 DEBUG = False
 SECRET_KEY = os.environ.get('SECRET_KEY', 'your-super-secret-production-key-here')
 
-# 允许的主机（请根据您的域名修改）
-ALLOWED_HOSTS = [
-    'your-domain.com',  # 您的域名
-    'www.your-domain.com',
-    'your-server-ip',  # 您的服务器IP
-    'localhost',
-    '127.0.0.1',
-]
+# 从环境变量获取域名和IP
+domain_name = os.environ.get('DOMAIN_NAME')
+server_ip = os.environ.get('SERVER_IP')
+
+if domain_name:
+    ALLOWED_HOSTS.extend([
+        domain_name,
+        f"www.{domain_name}",
+        f"api.{domain_name}",  # 如果有 API 子域名
+    ])
+
+if server_ip:
+    ALLOWED_HOSTS.append(server_ip)
+
+# 始终允许本地开发
+ALLOWED_HOSTS.extend(['localhost', '127.0.0.1'])
+
 
 # 数据库设置 - 生产环境建议使用 PostgreSQL 或 MySQL
 DATABASES = {
@@ -57,15 +69,18 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 
 # HTTPS 设置（如果使用 HTTPS）
-# SECURE_SSL_REDIRECT = True
-# SESSION_COOKIE_SECURE = True
-# CSRF_COOKIE_SECURE = True
+SECURE_SSL_REDIRECT = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
 
 # CORS 设置 - 生产环境应该限制域名
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = [
-    "https://your-frontend-domain.com",  # 您的前端域名
-    "http://localhost:3000",  # 开发环境前端
+    f"https://{os.environ.get('DOMAIN_NAME')}",
+    f"https://www.{os.environ.get('DOMAIN_NAME')}",
+    'https://localhost',
+    'https://127.0.0.1',
+    'https://your-ip-address',  # 硬编码的IP
 ]
 
 # 静态文件和媒体文件设置
