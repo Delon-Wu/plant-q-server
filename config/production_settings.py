@@ -69,18 +69,18 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 
 # HTTPS 设置（如果使用 HTTPS）
-# SECURE_SSL_REDIRECT = True
-# SESSION_COOKIE_SECURE = True
-# CSRF_COOKIE_SECURE = True
+SECURE_SSL_REDIRECT = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
 
 # CORS 设置 - 生产环境应该限制域名
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = [
     f"https://{os.environ.get('DOMAIN_NAME')}",
     f"https://www.{os.environ.get('DOMAIN_NAME')}",
-    'localhost',
-    '127.0.0.1',
-    'your-ip-address',  # 硬编码的IP
+    'https://localhost',
+    'https://127.0.0.1',
+    'https://your-ip-address',  # 硬编码的IP
 ]
 
 # 静态文件和媒体文件设置
