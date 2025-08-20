@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from rest_framework import generics, status
+from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -98,7 +99,7 @@ def verify_code(request):
         return JsonResponse({'message': '验证通过', 'code': 200})
     return JsonResponse({'message': '仅支持POST请求'}, status=405)
 
-class LogoutView(generics.GenericAPIView):
+class LogoutView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def post(self, request):
