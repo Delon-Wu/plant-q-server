@@ -18,7 +18,11 @@ class CustomTokenObtainPairView(TokenObtainPairView):
             if isinstance(error_detail, dict) and 'non_field_errors' in error_detail:
                 return APIResponse.auth_error(msg="邮箱或密码错误", code=401)
             return APIResponse.error(msg="登录失败", code=401)
-        except Exception:
+        except Exception as e:
+            # 记录详细错误信息便于排查
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Login error: {type(e).__name__}: {str(e)}", exc_info=True)
             return APIResponse.error(msg="登录失败，请稍后重试", code=500)
 
 class CustomTokenRefreshView(TokenRefreshView):
