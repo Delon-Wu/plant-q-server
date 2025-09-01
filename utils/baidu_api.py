@@ -17,7 +17,7 @@ def get_baidu_access_token(api_key, secret_key):
         'client_id': api_key,
         'client_secret': secret_key
     }
-    resp = requests.post(url, params=params)
+    resp = requests.post(url, data=params)
     data = resp.json()
     token = data.get('access_token')
     expires_in = data.get('expires_in', 0)
