@@ -78,8 +78,8 @@ EOF
 
 # 8. 配置 Redis
 echo -e "${YELLOW}配置 Redis...${NC}"
-# sudo systemctl enable redis-server
-# sudo systemctl start redis-server
+sudo systemctl enable redis-server
+sudo systemctl start redis-server
 
 # 9. 创建环境变量文件
 echo -e "${YELLOW}配置环境变量...${NC}"
